@@ -1,0 +1,65 @@
+# ==========================================
+# Secrets : ne JAMAIS commiter
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# Données
+# ==========================================
+# Données brutes (contiennent de vraies URLs malveillantes)
+data/raw/
+data/processed/
+data/external/
+# Exemples bénins de test : eux sont versionnés
+!data/samples/
+
+# Modèles entraînés (lourds, régénérables)
+models/
+*.joblib
+*.pkl
+
+# Cache des appels aux API externes
+*.sqlite
+*.sqlite3
+.cache/
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Tests et outils
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Streamlit (peut contenir des secrets)
+.streamlit/secrets.toml
+
+# ==========================================
+# Éditeurs et systèmes
+# ==========================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Obsidian (si ton vault est dans le dépôt)
+.obsidian/
