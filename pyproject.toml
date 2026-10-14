@@ -61,7 +61,7 @@ dev = [
 all = ["qr-phishing-detector[ml,pdf,web,dev]"]
 
 [project.urls]
-Repository = "https://github.com/VOTRE-PSEUDO/qr-phishing-detector"
+Repository = "https://github.com/mathieudlre/qr-phishing-detector"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/qrguard"]
