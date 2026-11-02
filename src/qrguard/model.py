@@ -8,7 +8,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from qrguard.features import FEATURE_NAMES, extract_features
+from qrguard.features import FEATURE_NAMES, extract_features, parse_url
 
 DEFAULT_MODEL_PATH = Path("models/url_model.joblib")
 LABELS_MALVEILLANTS = {"1", "phishing", "malicious", "bad", "malveillant"}
@@ -31,13 +31,36 @@ def load_dataset(chemin: str | Path) -> tuple[list[str], list[int]]:
     return urls, labels
 
 
+def canonicalize(url: str) -> str:
+    """Réduit une URL à son nom d'hôte, seule partie comparable entre les deux classes.
+
+    Dans PhiUSIIL, toutes les URLs légitimes sont en https, avec www et sans chemin : garder
+    ces éléments apprendrait au modèle que « avoir un chemin = phishing ». Le schéma et le
+    chemin restent analysés par les règles.
+    """
+    return f"https://{parse_url(url).host.removeprefix('www.')}"
+
+
+def deduplicate_hosts(urls: list[str], labels: list[int]) -> tuple[list[str], list[int]]:
+    """Garde chaque hôte une fois, pour qu'il ne soit pas à la fois en train et en test.
+
+    Les hôtes présents dans les deux classes sont retirés (ex. hébergeur partagé).
+    """
+    par_hote: dict[str, set[int]] = {}
+    for url, label in zip(urls, labels, strict=True):
+        par_hote.setdefault(canonicalize(url), set()).add(label)
+    uniques = [(hote, *classes) for hote, classes in par_hote.items() if len(classes) == 1]
+    return [hote for hote, _ in uniques], [label for _, label in uniques]
+
+
 def train(urls: list[str], labels: list[int], sortie: str | Path = DEFAULT_MODEL_PATH) -> dict:
-    """Entraîne le modèle, l'évalue sur 20 % des données, l'enregistre et renvoie ses scores."""
+    """Entraîne le modèle, l'évalue sur 20 % des hôtes, l'enregistre et renvoie ses scores."""
     import joblib
     from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
     from sklearn.model_selection import train_test_split
 
+    urls, labels = deduplicate_hosts(urls, labels)
     X = [extract_features(url) for url in urls]
     X_train, X_test, y_train, y_test = train_test_split(
         X, labels, test_size=0.2, stratify=labels, random_state=42
@@ -82,4 +105,4 @@ def predict_proba(url: str) -> float | None:
     modele = _load(os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
     if modele is None:
         return None
-    return float(modele.predict_proba([extract_features(url)])[0, 1])
+    return float(modele.predict_proba([extract_features(canonicalize(url))])[0, 1])

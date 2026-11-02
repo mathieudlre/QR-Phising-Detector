@@ -5,7 +5,13 @@ pytest.importorskip("joblib")
 
 from qrguard.analyzer import analyze_content  # noqa: E402
 from qrguard.cli import main  # noqa: E402
-from qrguard.model import load_dataset, predict_proba, train  # noqa: E402
+from qrguard.model import (  # noqa: E402
+    canonicalize,
+    deduplicate_hosts,
+    load_dataset,
+    predict_proba,
+    train,
+)
 
 
 def jeu_factice(n=150):
@@ -17,6 +23,24 @@ def jeu_factice(n=150):
         urls.append(f"http://login-verify{i}.secure-account.example.xyz/update/{i}?id={i}%20")
         labels.append(1)
     return urls, labels
+
+
+def test_canonicalize_ne_garde_que_l_hote():
+    assert canonicalize("http://www.Exemple.com/a/b?c=1") == "https://exemple.com"
+
+
+def test_deduplication_retire_doublons_et_conflits():
+    urls = ["https://a.com/1", "http://www.a.com/2", "https://b.com", "https://b.com/x"]
+    assert deduplicate_hosts(urls, [1, 1, 0, 1]) == (["https://a.com"], [1])
+
+
+def test_le_chemin_ne_change_pas_la_prediction(tmp_path, monkeypatch):
+    chemin = tmp_path / "modele.joblib"
+    train(*jeu_factice(), chemin)
+    monkeypatch.setenv("MODEL_PATH", str(chemin))
+    assert predict_proba("https://site7.example.com") == predict_proba(
+        "http://site7.example.com/un/long/chemin?x=1"
+    )
 
 
 def test_sans_modele_renvoie_none():

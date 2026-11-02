@@ -30,7 +30,7 @@ L'outil **n'ouvre jamais** l'URL analysée.
 - [x] Extraction des QR codes (images, photos, PDF)
 - [x] Moteur de règles et interface en ligne de commande
 - [x] Pipeline de machine learning
-- [ ] Entraînement du modèle sur un vrai jeu de données
+- [x] Entraînement du modèle sur un vrai jeu de données
 - [x] Enrichissement par des sources de réputation
 - [x] API (FastAPI) et interface web (Streamlit)
 - [x] Docker et intégration continue
@@ -80,7 +80,16 @@ pip install -e ".[ml]"
 qrguard train data/raw/urls.csv
 ```
 
-Les scores obtenus sur 20 % des données mises de côté sont affichés à la fin de l'entraînement.
+Les scores obtenus sur 20 % des hôtes mis de côté sont affichés à la fin de l'entraînement.
+
+Le modèle n'est pas versionné. Pour le recréer avec [PhiUSIIL](https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset), télécharge le CSV dans `data/raw/`, puis :
+
+```bash
+python script/prepare_phiusiil.py data/raw/PhiUSIIL_Phishing_URL_Dataset.csv data/raw/urls.csv
+qrguard train data/raw/urls.csv
+```
+
+Le script de conversion inverse les labels, car PhiUSIIL note 1 les sites légitimes. **Le modèle ne regarde que le nom d'hôte** : dans ce jeu de données, toutes les URLs légitimes sont en https, avec www et sans chemin, si bien qu'un modèle entraîné sur l'URL complète classe tout site réel avec un chemin comme du phishing. Le schéma et le chemin restent analysés par les règles.
 
 ### API et interface web
 
