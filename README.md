@@ -26,21 +26,23 @@ L'outil **n'ouvre jamais** l'URL analysée.
 
 ## Feuille de route
 
-- [ ] Mise en place du projet
-- [ ] Extraction des QR codes (images, photos, PDF)
-- [ ] Moteur de règles et interface en ligne de commande
-- [ ] Données et modèle de machine learning
-- [ ] Enrichissement par des sources de réputation
-- [ ] API (FastAPI) et interface web (Streamlit)
-- [ ] Docker, intégration continue et démo en ligne
+- [x] Mise en place du projet
+- [x] Extraction des QR codes (images, photos, PDF)
+- [x] Moteur de règles et interface en ligne de commande
+- [x] Pipeline de machine learning
+- [ ] Entraînement du modèle sur un vrai jeu de données
+- [x] Enrichissement par des sources de réputation
+- [x] API (FastAPI) et interface web (Streamlit)
+- [x] Docker et intégration continue
+- [ ] Démo en ligne
 
 ## Installation
 
 Prérequis : Python 3.11 ou plus récent.
 
 ```bash
-git clone https://github.com/VOTRE-PSEUDO/qr-phishing-detector.git
-cd qr-phishing-detector
+git clone https://github.com/mathieudlre/QR-Phising-Detector.git
+cd QR-Phising-Detector
 
 python -m venv .venv
 source .venv/bin/activate        # Windows : .venv\Scripts\activate
@@ -53,7 +55,50 @@ cp .env.example .env             # puis ajoute tes clés API (optionnelles)
 
 ## Utilisation
 
-En cours de développement.
+### En ligne de commande
+
+```bash
+qrguard scan data/samples/01_url.png           # image ou PDF
+qrguard check "http://paypal-secure.xyz/login" # contenu déjà décodé
+qrguard scan photo.jpg --json                  # sortie JSON
+```
+
+Code de sortie : `0` sûr, `1` suspect, `2` malveillant, `3` erreur.
+
+### Verdict
+
+Chaque signal détecté ajoute des points à un score plafonné à 100 : **sûr** en dessous de 30, **suspect** de 30 à 69, **malveillant** à partir de 70. Une source de réputation qui signale le lien suffit à le classer malveillant. Un verdict « sûr » signifie qu'aucun signal n'a été trouvé, pas que le contenu est garanti sans danger.
+
+L'outil repère les liens de phishing et les liens qui téléchargent un exécutable (`.apk`, `.exe`...). Comme il n'ouvre jamais l'URL, il n'analyse pas le fichier lui-même : seules les sources de réputation peuvent confirmer un malware connu.
+
+### Modèle de machine learning (optionnel)
+
+Sans modèle, l'analyse repose sur les règles. Pour en entraîner un, fournis un CSV avec les colonnes `url` et `label` (`phishing`/`benign` ou `1`/`0`), placé dans `data/raw/`, qui n'est pas versionné :
+
+```bash
+pip install -e ".[ml]"
+qrguard train data/raw/urls.csv
+```
+
+Les scores obtenus sur 20 % des données mises de côté sont affichés à la fin de l'entraînement.
+
+### API et interface web
+
+```bash
+pip install -e ".[web,pdf]"
+uvicorn qrguard.api:app --port 8000
+streamlit run app/streamlit_app.py
+```
+
+- `POST /analyze` : envoie une image ou un PDF (champ `file`) ;
+- `POST /analyze/content` : envoie un contenu décodé (`{"content": "..."}`) ;
+- `GET /health` : état du service ; documentation interactive sur `/docs`.
+
+Avec Docker : `docker compose up --build`, puis ouvre http://localhost:8501.
+
+### Sources de réputation
+
+Désactivées par défaut. Renseigne tes clés dans `.env` et passe `ENABLE_EXTERNAL_LOOKUPS=true`. Chaque URL analysée est alors transmise aux services configurés. Ce sont de simples consultations : aucun scan n'est déclenché.
 
 ## Développement
 
@@ -68,7 +113,7 @@ pytest              # tests
 ```text
 src/qrguard/   code source
 app/           interface Streamlit
-notebooks/     exploration et entraînement
+script/        génération des QR codes d'exemple
 data/          données (les données brutes ne sont pas versionnées)
 tests/         tests unitaires
 ```

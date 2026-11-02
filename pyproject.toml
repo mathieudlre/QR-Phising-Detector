@@ -48,7 +48,7 @@ web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "python-multipart>=0.0.9",
-    "streamlit>=1.35",
+    "streamlit>=1.38",
 ]
 # Outils de développement
 dev = [
@@ -60,8 +60,11 @@ dev = [
 # Tout installer d'un coup : pip install -e ".[all]"
 all = ["qr-phishing-detector[ml,pdf,web,dev]"]
 
+[project.scripts]
+qrguard = "qrguard.cli:main"
+
 [project.urls]
-Repository = "https://github.com/mathieudlre/qr-phishing-detector"
+Repository = "https://github.com/mathieudlre/QR-Phising-Detector"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/qrguard"]
